@@ -1,8 +1,8 @@
 import ICAL from "ical.js";
 // import {CALENDAR_PERSONAL, CALENDAR_CODELU} from "@env"
 
-const CALENDAR_PERSONAL = process.env.CALENDAR_PERSONAL
-const CALENDAR_CODELU = process.env.CALENDAR_CODELU
+const CALENDAR_PERSONAL = process.env.EXPO_PUBLIC_CALENDAR_PERSONAL
+const CALENDAR_CODELU = process.env.EXPO_PUBLIC_CALENDAR_CODELU
 
 interface CalendarEvent {
   title: string;
@@ -66,8 +66,8 @@ async function fetchCalendarEvents(
 export async function getTodaysEvents(): Promise<CalendarEvent[]> {
   const allEvents: CalendarEvent[] = [];
 
-  console.log("CALENDAR_PERSONAL:", process.env.CALENDAR_PERSONAL);
-  console.log("CALENDAR_CODELU:", process.env.CALENDAR_CODELU);
+  console.log("CALENDAR_PERSONAL:", process.env.EXPO_PUBLIC_CALENDAR_PERSONAL);
+  console.log("CALENDAR_CODELU:", process.env.EXPO_PUBLIC_CALENDAR_CODELU);
 
   for (const cal of CALENDARS) {
     if (!cal.url)
