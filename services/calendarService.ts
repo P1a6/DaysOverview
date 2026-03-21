@@ -66,9 +66,6 @@ async function fetchCalendarEvents(
 export async function getTodaysEvents(): Promise<CalendarEvent[]> {
   const allEvents: CalendarEvent[] = [];
 
-  console.log("CALENDAR_PERSONAL:", process.env.EXPO_PUBLIC_CALENDAR_PERSONAL);
-  console.log("CALENDAR_CODELU:", process.env.EXPO_PUBLIC_CALENDAR_CODELU);
-
   for (const cal of CALENDARS) {
     if (!cal.url)
         

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl } from "react-native";
+import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from "react-native";
 import { getTodaysEvents, getTomorrowsEvents } from "../../services/calendarService";
-import { loginToTickTick, getTodaysTasks } from "../../services/ticktickService";
+import { getTodaysTasks } from "../../services/ticktickService";
 import { Ionicons } from '@expo/vector-icons';
 
 interface CalendarEvent {
@@ -22,9 +22,9 @@ export default function HomeTab() {
   const [todayEvents, setTodayEvents] = useState<CalendarEvent[]>([]);
   const [tomorrowEvents, setTomorrowEvents] = useState<CalendarEvent[]>([]);
   const [todayTasks, setTodayTasks] = useState<Task[]>([]);
-  const [ticktickToken, setTicktickToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [tasksError, setTasksError] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -38,6 +38,16 @@ export default function HomeTab() {
       ]);
       setTodayEvents(today);
       setTomorrowEvents(tomorrow);
+
+      // Load TickTick tasks (using token from .env)
+      try {
+        const tasks = await getTodaysTasks();
+        setTodayTasks(tasks);
+        setTasksError(false);
+      } catch (error) {
+        console.error("Error loading tasks:", error);
+        setTasksError(true);
+      }
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
@@ -48,26 +58,7 @@ export default function HomeTab() {
   async function handleRefresh() {
     setRefreshing(true);
     await loadData();
-    if (ticktickToken) {
-      try {
-        const tasks = await getTodaysTasks(ticktickToken);
-        setTodayTasks(tasks);
-      } catch (error) {
-        console.error("Error refreshing tasks:", error);
-      }
-    }
     setRefreshing(false);
-  }
-
-  async function handleTickTickLogin() {
-    try {
-      const tokens = await loginToTickTick();
-      setTicktickToken(tokens.accessToken);
-      const tasks = await getTodaysTasks(tokens.accessToken);
-      setTodayTasks(tasks);
-    } catch (error) {
-      console.error("TickTick error:", error);
-    }
   }
 
   const nextEvent = todayEvents.find(event => event.startTime > new Date());
@@ -131,54 +122,46 @@ export default function HomeTab() {
           </View>
 
           {/* Tasks Summary */}
-          {!ticktickToken ? (
-            <TouchableOpacity 
-              onPress={handleTickTickLogin}
-              className="bg-neutral-900 rounded-2xl p-5 border-l-4 border-green-500"
-            >
-              <View className="flex-row items-center mb-2">
-                <Ionicons name="checkmark-circle" size={24} color="#10b981" />
-                <Text className="text-green-500 text-sm font-semibold ml-2">
-                  TASKS
-                </Text>
-              </View>
-              <Text className="text-white text-base font-medium">
-                Connect TickTick
+          <View className="bg-neutral-900 rounded-2xl p-5 border-l-4 border-green-500">
+            <View className="flex-row items-center mb-2">
+              <Ionicons name="checkmark-circle" size={24} color="#10b981" />
+              <Text className="text-green-500 text-sm font-semibold ml-2">
+                TODAY'S TASKS
               </Text>
-              <Text className="text-gray-500 text-sm mt-1">
-                Tap to login and see your tasks
-              </Text>
-            </TouchableOpacity>
-          ) : (
-            <View className="bg-neutral-900 rounded-2xl p-5 border-l-4 border-green-500">
-              <View className="flex-row items-center mb-2">
-                <Ionicons name="checkmark-circle" size={24} color="#10b981" />
-                <Text className="text-green-500 text-sm font-semibold ml-2">
-                  TODAY'S TASKS
-                </Text>
-              </View>
-              <Text className="text-white text-3xl font-bold mb-1">
-                {todayTasks.length}
-              </Text>
-              <Text className="text-gray-500 text-sm">
-                {todayTasks.length === 1 ? "task" : "tasks"} to complete
-              </Text>
-
-              {todayTasks.length > 0 && (
-                <View className="mt-3 pt-3 border-t border-neutral-800">
-                  <Text className="text-gray-500 text-xs mb-2">TOP PRIORITY</Text>
-                  {todayTasks.slice(0, 3).map((task) => (
-                    <View key={task.id} className="flex-row items-center mb-2">
-                      <Ionicons name="ellipse-outline" size={16} color="#888" />
-                      <Text className="text-white text-sm ml-2 flex-1" numberOfLines={1}>
-                        {task.title}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              )}
             </View>
-          )}
+            
+            {tasksError ? (
+              <>
+                <Text className="text-yellow-500 text-sm mb-1">⚠️ Not Connected</Text>
+                <Text className="text-gray-500 text-xs">
+                  Add TICKTICK_ACCESS_TOKEN to .env
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text className="text-white text-3xl font-bold mb-1">
+                  {todayTasks.length}
+                </Text>
+                <Text className="text-gray-500 text-sm">
+                  {todayTasks.length === 1 ? "task" : "tasks"} to complete
+                </Text>
+
+                {todayTasks.length > 0 && (
+                  <View className="mt-3 pt-3 border-t border-neutral-800">
+                    <Text className="text-gray-500 text-xs mb-2">TOP PRIORITY</Text>
+                    {todayTasks.slice(0, 3).map((task) => (
+                      <View key={task.id} className="flex-row items-center mb-2">
+                        <Ionicons name="ellipse-outline" size={16} color="#888" />
+                        <Text className="text-white text-sm ml-2 flex-1" numberOfLines={1}>
+                          {task.title}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </>
+            )}
+          </View>
 
           {/* Tomorrow Preview */}
           <View className="bg-neutral-900 rounded-2xl p-5 border-l-4 border-purple-500">
